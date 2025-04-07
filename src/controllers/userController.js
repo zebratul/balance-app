@@ -1,23 +1,24 @@
 class UserController {
-  constructor(userService, userModel) {
+  constructor(userService) {
     this.userService = userService;
-    this.userModel = userModel;
   }
 
   async updateBalance(req, res) {
     const { userId, amount } = req.body;
     
     try {
-      const rowCount = await this.userService.updateBalance(userId, amount);
-      
-      if (rowCount === 0) {
-        const user = await this.userModel.findByPk(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        return res.status(400).json({ message: 'Insufficient balance' });
-      }
-      
-      return res.json({ message: 'Balance updated successfully' });
+      const updatedUser = await this.userService.updateBalance(userId, amount);
+      res.json({
+        message: 'Balance updated successfully',
+        balance: updatedUser.balance
+      });
     } catch (error) {
+      if (error.message === 'User not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message === 'Insufficient balance') {
+        return res.status(400).json({ message: error.message });
+      }
       console.error(error);
       res.status(500).json({ message: 'Internal server error' });
     }

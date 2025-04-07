@@ -1,9 +1,9 @@
 module.exports = {
   development: {
-    username: 'postgres',
-    password: 'postgres',
-    database: 'balance_app',
-    host: 'localhost',
+    url: 'postgresql:***',
     dialect: 'postgres',
-  },
+    dialectOptions: {
+      ssl: false 
+    }
+  }
 };

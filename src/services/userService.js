@@ -1,25 +1,34 @@
+const { Op } = require('sequelize');
+
 class UserService {
-  constructor(sequelize) {
+  constructor(sequelize, userModel) {
     this.sequelize = sequelize;
+    this.userModel = userModel;
+    this.Op = Op;
   }
 
   async updateBalance(userId, amount) {
-    const query = `
-      UPDATE users 
-      SET balance = balance + ?
-      WHERE id = ?
-      ${amount < 0 ? 'AND balance + ? >= 0' : ''}
-    `;
+    const where = { 
+      id: userId,
+      ...(amount < 0 && { balance: { [this.Op.gte]: -amount } })
+    };
 
-    const replacements = [amount, userId];
-    if (amount < 0) replacements.push(amount);
+    const [rowCount] = await this.userModel.increment(
+      'balance',
+      {
+        by: amount,
+        where,
+        returning: false
+      }
+    );
 
-    const [rowCount] = await this.sequelize.query(query, {
-      replacements,
-      type: this.sequelize.QueryTypes.UPDATE,
-    });
+    if (rowCount[1] === 0) {
+      const user = await this.userModel.findByPk(userId);
+      if (!user) throw new Error('User not found');
+      throw new Error('Insufficient balance');
+    }
 
-    return rowCount;
+    return this.userModel.findByPk(userId);
   }
 }
 
